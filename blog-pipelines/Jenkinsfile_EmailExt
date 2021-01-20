@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+    parameters {
+        booleanParam(
+            defaultValue: false,
+            description: 'Force error',
+            name: 'FORCE_ERROR')
+    }
+    stages {
+        stage('Stage 1') {
+            steps {
+                // Simulate failure
+                echo 'Do some stuff here'
+            }
+        }        
+        stage('Stage 2') {
+            when { expression { return params.FORCE_ERROR } }
+            steps {
+                // Simulate failure
+                error('An error occurred on stage 1')
+            }
+        }
+    }
+    post {
+        always {
+            emailext subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', 
+                        recipientProviders: [requestor()],
+                        replyTo: '$DEFAULT_REPLYTO',
+                        body: '${SCRIPT, template="groovy-html.template"}',
+                        mimeType: 'text/html',
+                        presendScript: 'cancel=run.getPreviousBuild().result.toString().equals(run.result.toString())'						
+        }
+    }
+}
